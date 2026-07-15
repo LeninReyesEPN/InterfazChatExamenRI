@@ -288,7 +288,8 @@ export function ChatArea({
 
                       {/* Message Content */}
                       <div className={cn(
-                        "prose dark:prose-invert max-w-none text-foreground",
+                        "prose max-w-none",
+                        isUser ? "!text-primary-foreground" : "dark:prose-invert text-foreground",
                         !isUser && "glass-card p-4 rounded-3xl border border-border shadow-xs"
                       )}>
                         {message.content}
