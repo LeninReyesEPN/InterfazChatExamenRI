@@ -16,21 +16,9 @@ export default function Home() {
 
   // Load chat sessions from localStorage on mount
   useEffect(() => {
-    const savedChats = localStorage.getItem("ri_chat_sessions")
-    if (savedChats) {
-      try {
-        const parsed = JSON.parse(savedChats) as ChatSession[]
-        setChats(parsed)
-        if (parsed.length > 0) {
-          setActiveChatId(parsed[0].id)
-        }
-      } catch (e) {
-        console.error("Error parsing chat sessions", e)
-      }
-    } else {
-      // Create a default first chat
+    const createDefaultChat = () => {
       const defaultChat: ChatSession = {
-        id: "default-session",
+        id: `session-${Date.now()}`,
         title: "Nueva conversación",
         modelId: "gemini",
         createdAt: Date.now(),
@@ -38,6 +26,27 @@ export default function Home() {
       setChats([defaultChat])
       setActiveChatId(defaultChat.id)
       localStorage.setItem("ri_chat_sessions", JSON.stringify([defaultChat]))
+    }
+
+    const savedChats = localStorage.getItem("ri_chat_sessions")
+    if (savedChats) {
+      try {
+        const parsed = JSON.parse(savedChats) as ChatSession[]
+        if (parsed.length > 0) {
+          // Un arreglo vacío guardado (ej. tras borrar el último chat) debe tratarse
+          // igual que "no hay nada guardado", si no activeChatId se queda en null para
+          // siempre y enviar un mensaje no hace nada silenciosamente.
+          setChats(parsed)
+          setActiveChatId(parsed[0].id)
+        } else {
+          createDefaultChat()
+        }
+      } catch (e) {
+        console.error("Error parsing chat sessions", e)
+        createDefaultChat()
+      }
+    } else {
+      createDefaultChat()
     }
   }, [])
 
@@ -104,7 +113,23 @@ export default function Home() {
     content: string,
     files?: Array<{ name: string; type: "image" | "file" }>
   ) => {
-    if (!activeChatId) return
+    // Si no hay chat activo (ej. se borró el último), crea uno en vez de no hacer nada.
+    // No usamos `activeChatId`/`chats` de React state más abajo en esta función porque
+    // los setters no actualizan esas variables de forma síncrona dentro del mismo closure.
+    const chatId = activeChatId ?? `session-${Date.now()}`
+    let currentChats = chats
+    if (!activeChatId) {
+      const newChat: ChatSession = {
+        id: chatId,
+        title: "Nueva conversación",
+        modelId: "gemini",
+        createdAt: Date.now(),
+      }
+      currentChats = [newChat, ...chats]
+      setChats(currentChats)
+      setActiveChatId(chatId)
+      localStorage.setItem("ri_chat_sessions", JSON.stringify(currentChats))
+    }
 
     // 1. Create user message
     const userMsg: MessageType = {
@@ -116,24 +141,24 @@ export default function Home() {
 
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
-    localStorage.setItem(`ri_chat_msg_${activeChatId}`, JSON.stringify(newMessages))
+    localStorage.setItem(`ri_chat_msg_${chatId}`, JSON.stringify(newMessages))
 
     // 2. Update chat title if it was default
-    const activeChat = chats.find(c => c.id === activeChatId)
+    const activeChat = currentChats.find(c => c.id === chatId)
     if (activeChat && activeChat.title === "Nueva conversación") {
       const firstWords = content.split(" ").slice(0, 4).join(" ") + (content.split(" ").length > 4 ? "..." : "")
-      const updatedChats = chats.map(c => 
-        c.id === activeChatId ? { ...c, title: firstWords || "Conversación" } : c
+      const updatedChats = currentChats.map(c =>
+        c.id === chatId ? { ...c, title: firstWords || "Conversación" } : c
       )
       setChats(updatedChats)
       localStorage.setItem("ri_chat_sessions", JSON.stringify(updatedChats))
     }
 
     // 3. Trigger assistant query RAG
-    triggerRAGResponse(newMessages, content)
+    triggerRAGResponse(newMessages, content, chatId)
   }
 
-  const triggerRAGResponse = async (currentHistory: MessageType[], userQuery: string) => {
+  const triggerRAGResponse = async (currentHistory: MessageType[], userQuery: string, chatId: string) => {
     setIsGenerating(true)
 
     // Append placeholder assistant message with thinking state
@@ -214,7 +239,7 @@ export default function Home() {
           // Save final messages to localStorage
           setMessages((finalMessages) => {
             localStorage.setItem(
-              `ri_chat_msg_${activeChatId}`,
+              `ri_chat_msg_${chatId}`,
               JSON.stringify(finalMessages)
             )
             return finalMessages
@@ -234,7 +259,7 @@ export default function Home() {
                 ? { ...m, thinking: false, isStreaming: false, evidences }
                 : m
             )
-            localStorage.setItem(`ri_chat_msg_${activeChatId}`, JSON.stringify(updated))
+            localStorage.setItem(`ri_chat_msg_${chatId}`, JSON.stringify(updated))
             return updated
           })
         }
