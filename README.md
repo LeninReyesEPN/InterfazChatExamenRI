@@ -85,6 +85,21 @@ insuficiente) se documenta en la Sección I del notebook.
 
 ## Despliegue en la nube
 
-Ver [`DEPLOY.md`](./DEPLOY.md): guía y scripts (`deploy/`) para desplegar en una instancia
-**AWS EC2** de capa gratuita (`t2.micro`/`t3.micro`) con nginx enrutando frontend y backend en un
-mismo dominio.
+**Backend → Hugging Face Spaces (Docker)**: la carpeta `huggingface-space/` (no versionada en
+este repo, ver `.gitignore`) contiene un espejo listo para pushear al Space
+`Lenin2008072/BackExamen`: `Dockerfile`, `README.md` con frontmatter `sdk: docker`, y el código
+del backend con el corpus y el índice FAISS **ya pre-construidos** (no depende de Kaggle en
+runtime). Pasos:
+
+1. Clona tu Space: `git clone https://huggingface.co/spaces/Lenin2008072/BackExamen`
+2. Copia dentro el contenido de `huggingface-space/` (sobrescribe `README.md`).
+3. En el Space, ve a **Settings → Repository secrets** y agrega `GEMINI_API_KEY`.
+4. `git add -A && git commit -m "Deploy backend RAG" && git push`
+5. Cuando el Space termine de construir, la URL pública (`https://lenin2008072-backexamen.hf.space`)
+   es tu `NEXT_PUBLIC_API_URL`.
+
+**Frontend**: Vercel (gratis, HTTPS automático) apuntando a esa URL vía `NEXT_PUBLIC_API_URL`, o
+alternativamente la misma instancia EC2 descrita en `DEPLOY.md`.
+
+**Alternativa: AWS EC2** — ver [`DEPLOY.md`](./DEPLOY.md) y `deploy/` para desplegar todo
+(frontend + backend) en una instancia EC2 de capa gratuita (`t2.micro`/`t3.micro`) con nginx.

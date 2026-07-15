@@ -82,12 +82,20 @@ Esto ya está construido (no es un plan, es lo que hay en el repo):
 - **Notebook** (`examen_rag_arxiv.ipynb`, raíz del repo): documenta y ejecuta A–I importando
   `backend/*`, con la tabla de evaluación subjetiva (ítem I) para completar manualmente tras
   correr el sistema con consultas propias.
-- **Despliegue** (`DEPLOY.md` + `deploy/`): guía y scripts para **AWS EC2 t2.micro/t3.micro**
-  (decisión del usuario, no una de las sugeridas por defecto en el enunciado, pero permitida —
-  el enunciado lista "AWS" como opción válida). Arquitectura: nginx en el puerto 80 enrutando por
-  path (`/api/*` → FastAPI en :8000, `/*` → `next start` en :3000), ambos como servicios systemd,
-  con swapfile de 2GB por la RAM limitada de la instancia. Nadie ha ejecutado estos pasos en AWS
-  todavía — son para que el usuario los corra en su propia cuenta.
+- **Despliegue — decisión final: Hugging Face Spaces (Docker) para el backend.** El usuario ya
+  tiene un Space creado (`Lenin2008072/BackExamen`, actualmente tipo Static). Se prepara
+  `huggingface-space/` (carpeta local, gitignored en este repo — no pertenece al repo de GitHub,
+  es un espejo para pushear al remoto de Hugging Face) con `Dockerfile` + `README.md`
+  (`sdk: docker`, `app_port: 7860`) + el backend con el corpus/índice FAISS **ya pre-construidos**
+  copiados desde `backend/data/` (no depende de Kaggle en runtime, arranque rápido). El usuario
+  configura `GEMINI_API_KEY` como *Repository secret* del Space y hace el push él mismo (requiere
+  su token de HF, que no manejamos aquí). El front se pensaba desplegar en Vercel apuntando a la
+  URL del Space vía `NEXT_PUBLIC_API_URL`.
+  - Se descartó la ruta inicial de **AWS EC2 t2.micro/t3.micro** (documentada igual en
+    `DEPLOY.md` + `deploy/` como alternativa) porque requería resolver HTTPS a mano (Let's
+    Encrypt no emite certificados para una IP desnuda; hacía falta DuckDNS + Certbot) y tiene
+    menos RAM (1GB) que el free tier de Spaces (16GB) para correr
+    `sentence-transformers`+FAISS+cross-encoder.
 
 ## Precedente de origen: `ProyectoFinal/backend`
 

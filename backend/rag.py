@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+from dotenv import load_dotenv
 from sentence_transformers import CrossEncoder
 from google import genai
 from backend.vector_db import search as vector_search
+
+load_dotenv()  # permite ejecutar rag.py / test_pipeline.py / el notebook sin pasar por main.py
 
 GEMINI_MODEL = "gemini-2.5-flash"
 
