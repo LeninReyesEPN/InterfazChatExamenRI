@@ -1,106 +1,90 @@
-# Sistema de Recuperación de Información Multimodal con RAG
+# Sistema RAG sobre arXiv Paper Abstracts
 
-Este proyecto implementa un sistema completo de **Recuperación de Información Multimodal** basado en **RAG (Retrieval-Augmented Generation)** utilizando **CLIP** para la generación de embeddings multimodales, **FAISS** para la indexación y búsqueda vectorial rápida, y la **API de Google Gemini** como modelo de lenguaje generativo.
+Examen final de **ICCD753 Recuperación de Información** (EPN-FIS, 2026-A, Prof. Iván Carrera).
+Sistema de Recuperación Aumentada por Generación (RAG) que responde consultas en lenguaje natural
+sobre el corpus [arXiv Paper Abstracts](https://www.kaggle.com/datasets/spsayakpaul/arxiv-paper-abstracts)
+(Kaggle), usando búsqueda semántica sobre una base de datos vectorial y un LLM (Gemini) para
+generar respuestas fundamentadas en la evidencia recuperada.
 
-Fue desarrollado para la asignatura de Recuperación de Información en la Escuela Politécnica Nacional (EPN).
-
----
-
-## 🎨 Características del Sistema
-
-### 1. Interfaz Web Conversacional (Frontend Next.js)
-* Estética monocromática minimalista de alto contraste (negro absoluto y blanco).
-* Fuente tipográfica **Josefin Sans** aplicada de forma global en todo el DOM.
-* **Visualización de Evidencias (Requisito Crítico)**: Cada respuesta del asistente incluye un panel colapsable que muestra las evidencias utilizadas por el RAG (título del producto, imagen previsualizada, ID del producto y similitud coseno exacta).
-
-### 2. Pipeline Multimodal y RAG (Backend FastAPI)
-* **Embeddings Multimodales**: Utiliza el modelo `clip-ViT-B-32` para alinear representaciones vectoriales de texto y fotos en un espacio común.
-* **Corpus Real**: Carga y procesa un subconjunto de `crossingminds/shopping-queries-image-dataset` (SQID) de Hugging Face.
-* **Base de Datos Vectorial**: Indexa los vectores de productos y realiza la recuperación por similitud coseno con **FAISS**.
-
-### 3. Funcionalidades de Excelencia (+60 Puntos Extra)
-* **Re-ranking (+15 pts)**: Reordena las evidencias recuperadas usando el modelo Cross-Encoder `ms-marco-MiniLM-L-6-v2`.
-* **Query Expansion (+15 pts)**: Expansión y reformulación automática de consultas usando Gemini.
-* **Relevance Feedback (+15 pts)**: Al pulsar "Me gusta" o "No me gusta" en el chat, el sistema guarda la interacción y ajusta los scores de relevancia para búsquedas futuras.
-* **Memoria Conversacional (+15 pts)**: Mantiene el contexto de los últimos turnos de conversación e historial en cada petición de RAG.
-
-### 4. Módulo de Evaluación Experimental
-* Computa de forma automática métricas de calidad en base a los juicios de relevancia (`esci_label`) incluidos en el dataset de Hugging Face:
-  * **Precision@k** (para k=1, 3, 5)
-  * **Recall@k** (para k=1, 3, 5)
-  * **NDCG@k** (para k=1, 3, 5)
+El enunciado completo está en `Guia del examen/examen2bim.pdf`. El notebook
+[`examen_rag_arxiv.ipynb`](./examen_rag_arxiv.ipynb) documenta e implementa cada requerimiento
+(A–I) del enunciado.
 
 ---
 
-## ⚙️ Estructura del Código
+## Arquitectura
+
+* **Frontend (Next.js/React, `src/`)**: interfaz de chat conversacional. Envía cada consulta al
+  backend y muestra la respuesta junto con las evidencias (papers) usadas para generarla.
+* **Backend (FastAPI, `backend/`)**: pipeline RAG completo.
+  1. **Corpus** (`corpus.py`): descarga el dataset de Kaggle vía `kagglehub`, toma un subconjunto
+     de ~4000 papers y genera `data/corpus.json` + juicios de relevancia sintéticos
+     (`data/qrels.json`) para evaluación.
+  2. **Embeddings** (`embeddings.py`): `sentence-transformers/all-MiniLM-L6-v2` sobre
+     `título + abstract`.
+  3. **Vector DB** (`vector_db.py`): índice FAISS (`IndexFlatIP`) para búsqueda por similitud
+     coseno.
+  4. **RAG** (`rag.py`): búsqueda vectorial (top-10) → re-ranking con cross-encoder
+     (`cross-encoder/ms-marco-MiniLM-L-6-v2`, top-4) → generación con **Gemini**
+     (`gemini-2.5-flash`), indicando explícitamente cuando la evidencia recuperada es
+     insuficiente para responder con certeza.
+  5. **Evaluación** (`evaluation.py`): Precision@k, Recall@k, NDCG@k contra los qrels sintéticos.
+
+Cada consulta se procesa de forma independiente (no hay memoria conversacional — no es un
+requisito del examen).
+
+---
+
+## Instalación y ejecución local
+
+### Requisitos previos
+* Python 3.11+ (evita usar 3.9: en algunos entornos `google-genai`/`cryptography` fallan por un
+  binario incompatible con Python < 3.10).
+* Node.js 18+ y npm.
+* Una API key de Gemini ([Google AI Studio](https://aistudio.google.com/)).
+
+### Backend
 
 ```bash
-├── backend/
-│   ├── corpus.py         # Descarga y procesa el corpus de Hugging Face
-│   ├── embeddings.py     # Genera vectores usando el modelo CLIP
-│   ├── vector_db.py      # Controla el índice FAISS local
-│   ├── rag.py            # Orquestador RAG (LLM, re-ranking, query expansion, feedback)
-│   ├── evaluation.py     # Ejecuta la evaluación experimental de métricas (Precision, Recall, NDCG)
-│   └── main.py           # Servidor REST de FastAPI
-├── src/                  # Código fuente del Frontend Next.js (TypeScript/React)
-│   ├── app/              # Enrutador App Router (page.tsx, globals.css, layout.tsx)
-│   └── components/       # Componentes visuales (chat-area.tsx, sidebar.tsx)
+python3.11 -m venv backend/.venv
+source backend/.venv/bin/activate
+pip install -r backend/requirements.txt
+export GEMINI_API_KEY="tu-api-key-aquí"
+python -m uvicorn backend.main:app --reload --port 8000
 ```
 
----
+En el primer arranque, descarga el corpus de Kaggle y construye el índice FAISS automáticamente
+(tarda 1-3 minutos).
 
-## 🚀 Instalación y Ejecución
+### Frontend
 
-### Requisitos Previos
-* Python 3.9+ instalado.
-* Node.js 18+ y npm instalados.
-* Clave de API de Gemini (debes exportarla como variable de entorno `GEMINI_API_KEY`).
+```bash
+npm install
+cp .env.local.example .env.local   # ajusta NEXT_PUBLIC_API_URL si el backend no está en localhost:8000
+npm run dev
+```
 
-### Paso 1: Configurar y Ejecutar el Backend (Python)
-
-1. Entra al directorio del backend e inicializa el entorno virtual:
-   ```bash
-   python3 -m venv backend/.venv
-   source backend/.venv/bin/activate
-   ```
-2. Instala las dependencias necesarias:
-   ```bash
-   pip install fastapi uvicorn datasets pandas pyarrow faiss-cpu sentence-transformers google-generativeai requests
-   ```
-3. Exporta tu clave de API de Gemini:
-   ```bash
-   export GEMINI_API_KEY="tu-api-key-aqui"
-   ```
-4. Corre el servidor FastAPI:
-   ```bash
-   python -m uvicorn backend.main:app --reload --port 8000
-   ```
-   * *Nota: En la primera ejecución, el servidor descargará el corpus de Hugging Face y construirá el índice FAISS automáticamente.*
-
-### Paso 2: Configurar y Ejecutar el Frontend (Next.js)
-
-1. En la raíz del proyecto, instala los paquetes npm:
-   ```bash
-   npm install
-   ```
-2. Ejecuta el servidor de desarrollo del frontend:
-   ```bash
-   npm run dev
-   ```
-3. Abre tu navegador e ingresa a **[http://localhost:3000](http://localhost:3000)**.
+Abre [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 📊 Evaluación Experimental (Métricas)
+## Evaluación experimental
 
-Para ejecutar la evaluación de Precision, Recall y NDCG de las consultas de prueba del benchmark de la EPN, puedes:
+```bash
+curl http://localhost:8000/api/evaluate
+# o directamente:
+python -m backend.evaluation
+```
 
-1. Llamar al endpoint de evaluación desde tu terminal con `curl`:
-   ```bash
-   curl http://localhost:8000/api/evaluate
-   ```
-2. O bien, ejecutar directamente el módulo Python:
-   ```bash
-   python -m backend.evaluation
-   ```
-   Esto imprimirá una tabla con los scores promedio para `K=1`, `K=3` y `K=5` contra las etiquetas de relevancia del dataset de Hugging Face.
+Imprime Precision@k / Recall@k / NDCG@k (k=1,3,5) contra los juicios de relevancia sintéticos
+descritos en `backend/corpus.py`. El juicio subjetivo sobre la calidad de la generación
+(corrección, relevancia, fidelidad, integración multi-documento, reconocimiento de información
+insuficiente) se documenta en la Sección I del notebook.
+
+---
+
+## Despliegue en la nube
+
+Ver [`DEPLOY.md`](./DEPLOY.md): guía y scripts (`deploy/`) para desplegar en una instancia
+**AWS EC2** de capa gratuita (`t2.micro`/`t3.micro`) con nginx enrutando frontend y backend en un
+mismo dominio.

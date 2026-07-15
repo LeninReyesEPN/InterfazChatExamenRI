@@ -152,8 +152,9 @@ export default function Home() {
         content: msg.content
       }))
 
-      // Call local FastAPI RAG API
-      const response = await fetch("http://localhost:8000/api/chat", {
+      // Call the FastAPI RAG API (configurable via NEXT_PUBLIC_API_URL for deployment)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+      const response = await fetch(`${apiUrl}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -171,6 +172,7 @@ export default function Home() {
       const data = await response.json()
       const fullResponse = data.answer || "No se obtuvo respuesta del sistema RAG."
       const evidences = data.evidences || []
+      const insufficientEvidence = Boolean(data.insufficient_evidence)
       
       const thinkingSecs = ((Date.now() - startTime) / 1000).toFixed(1)
 
@@ -193,6 +195,7 @@ export default function Home() {
                   content: currentText,
                   isStreaming: !isDone,
                   evidences: isDone ? evidences : undefined, // Attach evidences at the end
+                  insufficientEvidence: isDone ? insufficientEvidence : undefined,
                 }
               : msg
           )
@@ -244,7 +247,7 @@ export default function Home() {
                 ...msg,
                 thinking: false,
                 thinkingDuration: `Error en ${thinkingSecs}s`,
-                content: "Hubo un error al intentar conectar con el servicio RAG local en `http://localhost:8000`. Asegúrate de que el backend de Python esté corriendo e inicializado.",
+                content: `Hubo un error al intentar conectar con el servicio RAG en \`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}\`. Asegúrate de que el backend de Python esté corriendo e inicializado.`,
                 isStreaming: false,
               }
             : msg

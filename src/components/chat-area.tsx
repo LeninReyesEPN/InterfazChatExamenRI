@@ -17,11 +17,13 @@ export type MessageType = {
   thinkingDuration?: string
   isStreaming?: boolean
   evidences?: Array<{
-    product_id: string
+    paper_id: string
     title: string
-    image_url: string
+    abstract: string
+    categories: string[]
     similarity: number
   }>
+  insufficientEvidence?: boolean
 }
 
 type ChatAreaProps = {
@@ -74,39 +76,16 @@ export function ChatArea({
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const handleFeedback = async (msgId: string, type: "like" | "dislike") => {
+  const handleFeedback = (msgId: string, type: "like" | "dislike") => {
+    // Local-only UI feedback: the exam guide does not require persisting
+    // relevance feedback, so this just toggles the button state.
     const isUndoing = feedbackId[msgId] === type
     const newFeedback = isUndoing ? undefined : type
-    
+
     setFeedbackId((prev) => ({
       ...prev,
       [msgId]: newFeedback,
     }))
-
-    // Find the associated user query for this message
-    const msgIndex = messages.findIndex(m => m.id === msgId)
-    if (msgIndex > 0) {
-      const userMsg = messages[msgIndex - 1]
-      const queryText = userMsg.content
-      
-      const currentMsg = messages[msgIndex]
-      if (currentMsg.evidences && currentMsg.evidences.length > 0) {
-        // Send relevance feedback to the Python backend
-        try {
-          await fetch("http://localhost:8000/api/feedback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              query: queryText,
-              product_id: currentMsg.evidences[0].product_id, // Apply feedback to the primary evidence
-              feedback: type
-            })
-          })
-        } catch (err) {
-          console.error("Error sending feedback to backend", err)
-        }
-      }
-    }
   }
 
   // Scroll to bottom when messages or loading changes
@@ -315,42 +294,44 @@ export function ChatArea({
                         {message.content}
                       </div>
 
-                      {/* Multimodal Evidences (Top-K) Accordion - Only shown for Assistant messages with evidence */}
+                      {/* Explicit notice when the corpus lacks enough evidence for this query */}
+                      {!isUser && !message.thinking && message.insufficientEvidence && (
+                        <div className="mt-2 text-[11px] text-amber-500/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+                          El corpus no contiene evidencia suficiente para responder esta consulta con certeza.
+                        </div>
+                      )}
+
+                      {/* Evidences (Top-K retrieved papers) Accordion - Only shown for Assistant messages with evidence */}
                       {!isUser && !message.thinking && message.evidences && message.evidences.length > 0 && (
                         <details className="mt-3 border-t border-border/20 pt-3 group/details w-full">
                           <summary className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground select-none outline-none flex items-center gap-1 cursor-pointer list-none">
                             <ChevronDown className="size-3 transition-transform group-open/details:rotate-180" />
-                            <span>Evidencias Multimodales ({message.evidences.length})</span>
+                            <span>Evidencias recuperadas ({message.evidences.length})</span>
                           </summary>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3.5 animate-in fade-in-30 slide-in-from-top-1 duration-300">
+                          <div className="grid grid-cols-1 gap-3 mt-3.5 animate-in fade-in-30 slide-in-from-top-1 duration-300">
                             {message.evidences.map((item, idx) => (
                               <div
                                 key={idx}
-                                className="bg-secondary/20 border border-border/60 p-2.5 rounded-xl flex items-center gap-3 hover:bg-secondary/40 transition-all duration-200"
+                                className="bg-secondary/20 border border-border/60 p-3 rounded-xl hover:bg-secondary/40 transition-all duration-200"
                               >
-                                {item.image_url && (
-                                  <img
-                                    src={item.image_url}
-                                    alt={item.title}
-                                    className="size-12 rounded-lg bg-black/20 object-cover border border-border shrink-0"
-                                    onError={(e) => {
-                                      // Fallback on image load error
-                                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/150?text=No+Image"
-                                    }}
-                                  />
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-medium text-foreground line-clamp-2 leading-snug" title={item.title}>
-                                    {item.title}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[9px] uppercase font-semibold text-muted-foreground/60 tracking-wider">
-                                      ID: {item.product_id}
+                                <p className="text-xs font-medium text-foreground leading-snug" title={item.title}>
+                                  {item.title}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground/80 leading-snug line-clamp-3 mt-1">
+                                  {item.abstract}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                  {item.categories?.map((cat) => (
+                                    <span
+                                      key={cat}
+                                      className="text-[9px] uppercase font-semibold text-muted-foreground/60 tracking-wider bg-secondary/60 px-1.5 py-0.5 rounded"
+                                    >
+                                      {cat}
                                     </span>
-                                    <span className="text-[9px] text-muted-foreground font-mono">
-                                      Similitud: {(item.similarity * 100).toFixed(1)}%
-                                    </span>
-                                  </div>
+                                  ))}
+                                  <span className="text-[9px] text-muted-foreground font-mono ml-auto">
+                                    Similitud: {(item.similarity * 100).toFixed(1)}%
+                                  </span>
                                 </div>
                               </div>
                             ))}
