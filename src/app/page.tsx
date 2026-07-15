@@ -41,7 +41,11 @@ export default function Home() {
     }
   }, [])
 
-  // Load messages whenever activeChatId changes
+  // Load messages when the active chat changes.
+  // IMPORTANT: depends only on `activeChatId`, not on `chats` — renaming the chat title
+  // (e.g. right after sending the first message) updates `chats` while a RAG response is
+  // still in flight; re-running this effect on that unrelated change reloads messages from
+  // localStorage and wipes out the in-memory "thinking"/streaming assistant placeholder.
   useEffect(() => {
     if (!activeChatId) {
       setMessages([])
@@ -58,7 +62,8 @@ export default function Home() {
     } else {
       setMessages([])
     }
-  }, [activeChatId, chats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChatId])
 
   const handleSelectChat = (id: string) => {
     setActiveChatId(id)
