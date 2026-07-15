@@ -227,7 +227,7 @@ export function ChatArea({
         ) : (
           /* Messages list */
           <div className="max-w-3xl mx-auto space-y-6 pb-24">
-            <ChatContainer>
+            <ChatContainer className="flex-col">
               {messages.map((message) => {
                 const isUser = message.role === "user"
                 return (
@@ -262,7 +262,7 @@ export function ChatArea({
                       role={message.role}
                       variant={isUser ? "bubble" : "default"}
                       className={cn(
-                        "max-w-[85%] rounded-3xl text-sm leading-relaxed p-4",
+                        "flex-col max-w-[85%] rounded-3xl text-sm leading-relaxed p-4",
                         isUser
                           ? "bg-primary text-primary-foreground font-normal rounded-tr-sm shadow-xs"
                           : "bg-transparent text-foreground border-none pl-0 pr-4 py-1"
