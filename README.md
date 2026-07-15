@@ -12,6 +12,24 @@ usando búsqueda semántica y un LLM para generar respuestas con evidencias.
   [`examen_rag_arxiv.ipynb`](./examen_rag_arxiv.ipynb)
 - **Enunciado**: [`Guia del examen/examen2bim.pdf`](./Guia%20del%20examen/examen2bim.pdf)
 
+### Idioma
+
+El corpus (abstracts de arXiv) y las respuestas generadas están **en inglés**. Se preguntas en
+español la búsqueda pierde precisión y de todas formas la respuesta llega en inglés — usa
+consultas en inglés para obtener los mejores resultados.
+
+### Preguntas de ejemplo
+
+- "What are the main applications of Graph Neural Networks?"
+- "How is reinforcement learning used in robotics?"
+- "Recent advances in diffusion models for image generation."
+- "Techniques for improving retrieval-augmented generation systems."
+- "Explainability and interpretability of deep learning models"
+- "Federated learning for privacy preserving machine learning"
+
+Para probar el caso de "el corpus no tiene información suficiente" (Requerimiento F), usa una
+consulta fuera de dominio, ej.: "What is the best recipe for a chocolate cake?"
+
 ## Estructura
 
 - `src/` — frontend (Next.js), desplegado en **AWS Amplify**.
