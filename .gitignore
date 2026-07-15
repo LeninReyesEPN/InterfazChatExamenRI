@@ -53,3 +53,5 @@ backend/data/
 # un remoto git distinto (huggingface.co/spaces/...), no pertenece a este repo.
 huggingface-space/
 
+CLAUDE.md
+AGENTS.md

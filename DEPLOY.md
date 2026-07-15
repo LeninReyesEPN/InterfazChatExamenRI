@@ -3,8 +3,8 @@
 Este documento describe cómo desplegar **backend (FastAPI) + frontend (Next.js)** en una sola
 instancia EC2 de la capa gratuita, con `nginx` enrutando por path. No requiere contenedores.
 
-> Nota: yo (Claude) no tengo acceso a tu cuenta de AWS y no ejecuto estos pasos por ti — esta guía
-> y los scripts de `deploy/` son para que tú los corras en tu propia instancia.
+> Nota: esta guía y los scripts de `deploy/` describen los pasos a ejecutar directamente en tu
+> propia instancia EC2.
 
 ## 0. Por qué esta arquitectura
 
