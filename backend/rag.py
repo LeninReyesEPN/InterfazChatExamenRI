@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from sentence_transformers import CrossEncoder
 from google import genai
 from backend.vector_db import search as vector_search
 
-load_dotenv()  # permite ejecutar rag.py / test_pipeline.py / el notebook sin pasar por main.py
+# Ruta explícita (no depender de la búsqueda automática de find_dotenv, que
+# no encontraba backend/.env de forma confiable según cómo se invoque el script).
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 GEMINI_MODEL = "gemini-2.5-flash"
 

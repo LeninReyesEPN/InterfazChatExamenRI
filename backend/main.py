@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()  # carga backend/.env en desarrollo local; en HF Spaces/EC2 las variables ya vienen del entorno
+load_dotenv(Path(__file__).resolve().parent / ".env")  # ruta explícita a backend/.env
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
