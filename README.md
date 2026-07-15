@@ -7,7 +7,7 @@ usando búsqueda semántica y un LLM para generar respuestas con evidencias.
 ## Entrega del examen
 
 - **Chat desplegado**: https://main.d1ngrhzkw2klti.amplifyapp.com/
-- **API del backend**: https://steering-assembled-talks-tissue.trycloudflare.com (EC2 + Cloudflare Tunnel)
+- **API del backend**: https://connectivity-navigate-insert-genres.trycloudflare.com (EC2 + Cloudflare Tunnel)
 - **Notebook del examen** (requerimientos A–I, con evidencias, evaluación y esta misma URL):
   [`examen_rag_arxiv.ipynb`](./examen_rag_arxiv.ipynb)
 - **Enunciado**: [`Guia del examen/examen2bim.pdf`](./Guia%20del%20examen/examen2bim.pdf)
