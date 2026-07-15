@@ -1,0 +1,14 @@
+[Unit]
+Description=Examen RI - Backend FastAPI (RAG arXiv)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/examen-ri-backend
+ExecStart=/home/ubuntu/examen-ri-backend/backend/.venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

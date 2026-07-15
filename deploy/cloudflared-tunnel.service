@@ -1,0 +1,14 @@
+[Unit]
+Description=Cloudflare Quick Tunnel para el backend del examen RI
+After=network.target examen-ri-backend.service
+Requires=examen-ri-backend.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared tunnel --url http://localhost:8000 --logfile /home/ubuntu/cloudflared.log
+Restart=on-failure
+RestartSec=5
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

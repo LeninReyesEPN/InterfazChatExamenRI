@@ -48,10 +48,5 @@ backend/__pycache__/
 backend/data/
 .env.production
 
-# paquete de despliegue para el Space de Hugging Face: es un espejo generado
-# de backend/ + backend/data/ (13MB de datos pre-construidos) para pushear a
-# un remoto git distinto (huggingface.co/spaces/...), no pertenece a este repo.
-huggingface-space/
-
 CLAUDE.md
 AGENTS.md

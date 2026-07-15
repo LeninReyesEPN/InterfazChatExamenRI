@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 from backend.corpus import download_and_prepare_corpus
-from backend.vector_db import build_index
+from backend.vector_db import build_index, load_index
 from backend.rag import generate_rag_response
 from backend.evaluation import run_evaluation
 
@@ -47,7 +47,7 @@ def startup_event():
     print("Iniciando servicio y preparando datos...")
     try:
         download_and_prepare_corpus()
-        build_index()
+        load_index()  # reutiliza faiss.index si ya existe; solo lo reconstruye si falta
     except Exception as e:
         print(f"Error durante la inicialización de inicio: {e}")
 
